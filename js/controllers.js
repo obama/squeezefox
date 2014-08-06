@@ -286,6 +286,23 @@ squeezefox.controller('MusicSearchCtrl', ['$scope', function ($scope) {
             var rs = xhr.response.result;
             $scope.searchprogress.track = false;
             
+            /* search albums independently, because this query will return also artist, year, cover
+             * while "search" will only return album title (and we'd need another XX queries to fill in the details..)
+             */
+            $scope.queryServer(["albums", "0", "20", "search:"+term, "tags:layj"], function(xhr) {
+                $scope.searchprogress.album = false; // XXX when xhr fails, progress will not be reset! spins forever!
+                var rs = xhr.response.result;
+                var albums = [];
+                if ('albums_loop' in rs) {
+                    albums = rs.albums_loop;
+                    $scope.noresults.album = false;
+                }
+                else {
+                    $scope.noresults.album = true;
+                }
+                $scope.searchresults.album = albums;
+            });
+            
             var tracks = []
             if ('tracks_loop' in xhr.response.result) {
                 $scope.noresults.track = false;
