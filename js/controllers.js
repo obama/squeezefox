@@ -225,7 +225,7 @@ squeezefox.controller('PlayerStatusCtrl', ['$scope', '$http', '$interval', funct
                 var rm = rs.remoteMeta; //$scope.playlist.list[$scope.playlist.current];
                 $scope.artworkURL = rm.artwork_url;
             }
-            else if (rs.playlist_loop[rs.playlist_cur_index].coverart == "1") {
+            else if (typeof rs.playlist_loop[rs.playlist_cur_index] != 'undefined' && rs.playlist_loop[rs.playlist_cur_index].coverart == "1") {
                 $scope.artworkURL = "http://"+$scope.server.addr+':'+$scope.server.port+"/music/"+rs.playlist_loop[rs.playlist_cur_index].coverid+"/cover_300x300";
             }
             else {
@@ -270,18 +270,22 @@ squeezefox.controller('PlayerStatusCtrl', ['$scope', '$http', '$interval', funct
     }
 }]);
 squeezefox.controller('MusicSearchCtrl', ['$scope', function ($scope) {
-    $scope.searchterm = "";
-    $scope.searchresults = []
-    $scope.searchdetails = {};
+    $scope.searchterm      = "";
+    $scope.searchresults   = { 'artist': [], 'album': [], 'track': [] };
+    $scope.searchdetails   = {};
     $scope.showTrackDialog = false;
-    $scope.dialogItem = {};
-    $scope.noresults = { 'track': false };
-    $scope.searchprogress = { 'track': false };
+    $scope.dialogItem      = {};
+    $scope.noresults       = { 'track': false, 'artist': false, 'album': false };
+    $scope.searchprogress  = { 'track': false, 'album': false };
     
     $scope.search = function search(term) {
-        $scope.searchprogress = { 'track': true };
+        $scope.searchprogress = { 'track': true, 'album': true };
+        $scope.searchresults  = { 'artist': [], 'album': [], 'track': [] };
+        
         $scope.queryServer(["search", "0","20","term:"+term], function(xhr) {
+            var rs = xhr.response.result;
             $scope.searchprogress.track = false;
+            
             var tracks = []
             if ('tracks_loop' in xhr.response.result) {
                 $scope.noresults.track = false;
@@ -290,17 +294,37 @@ squeezefox.controller('MusicSearchCtrl', ['$scope', function ($scope) {
             else {
                 $scope.noresults.track = true;
             }
-            $scope.searchresults = tracks;
+            $scope.searchresults.track = tracks;
+            
+            var artists = [];
+            if ('contributors_loop' in rs) {
+                artists = rs.contributors_loop;
+                $scope.noresults.artist = false;
+            }
+            else {
+                $scope.noresults.artist = true;
+            }
+            $scope.searchresults.artist = artists;
+            
             // fill in details for list (e.g. artist)
             for (var item of tracks) {
                 $scope.queryServer(["songinfo", "0","11","track_id:"+item.track_id], function(xhr) {
                     var songinfo = xhr.response.result.songinfo_loop;
-                    $scope.searchdetails[parseInt(songinfo[0].id)] = {
-                        title: songinfo[1].title, artist: songinfo[2].artist,
-                        coverid: songinfo[3].coverid, duration: songinfo[4].duration,
-                        album_id: songinfo[5].album_id,
-                        album: songinfo[5].album,
-                        coverurl: "http://"+$scope.server.addr+':'+$scope.server.port+"/music/"+songinfo[3].coverid+"/cover_150x150_o" };
+                    
+                    var x = {
+                        title:  songinfo[1].title,
+                        artist: songinfo[2].artist
+                    };
+                    var i = 3; // index, if coverid is not available, duration is at index 3 -.- the output format is very unuseful.
+                    if (typeof songinfo[3].coverid != 'undefined') {
+                        x.coverid = songinfo[3].coverid;
+                        i++;
+                    }
+                    x.duration = songinfo[i++].duration,
+                    x.album_id = songinfo[i++].album_id,
+                    x.album    = songinfo[i].album,
+                    x.coverurl = "http://"+$scope.server.addr+':'+$scope.server.port+"/music/"+x.coverid+"/cover_150x150_o";
+                    $scope.searchdetails[parseInt(songinfo[0].id)] = x;
                 });
             }
         });
