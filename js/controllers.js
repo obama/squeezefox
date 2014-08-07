@@ -74,6 +74,9 @@ squeezefox.controller('WindowCtrl', ['$scope', function ($scope) {
     * params is a list, eg: ["play", ""]
     */
     $scope.queryPlayer = function (params, callback, playerid) {
+        if (typeof $scope.selectedPlayer.playerid == 'undefined' && typeof playerid == 'undefined') {
+            return false;
+        }
         playerid = typeof playerid !== 'undefined' ? playerid : $scope.selectedPlayer.playerid;
         $scope.JSONRPC({"id":1,"method":"slim.request","params":[playerid, params]}, callback);
     }
@@ -277,32 +280,35 @@ squeezefox.controller('MusicSearchCtrl', ['$scope', function ($scope) {
     $scope.dialogItem      = {};
     $scope.noresults       = { 'track': false, 'artist': false, 'album': false };
     $scope.searchprogress  = { 'track': false, 'album': false };
+    $scope.cssHideRes      = { 'track': false, 'artist': false, 'album': false };
     
     $scope.search = function search(term) {
         $scope.searchprogress = { 'track': true, 'album': true };
         $scope.searchresults  = { 'artist': [], 'album': [], 'track': [] };
+        $scope.cssHideRes     = { 'track': false, 'artist': false, 'album': false };
+        
+        /* search albums independently, because this query will return also artist, year, cover
+         * while "search" will only return album title (and we'd need another XX queries to fill in the details..)
+         */
+        $scope.queryServer(["albums", "0", "20", "search:"+term, "tags:layj"], function(xhr) {
+            $scope.searchprogress.album = false; // XXX when xhr fails, progress will not be reset! spins forever!
+            
+            var rs = xhr.response.result;
+            var albums = [];
+            if ('albums_loop' in rs) {
+                albums = rs.albums_loop;
+                $scope.noresults.album = false;
+            }
+            else {
+                $scope.noresults.album = true;
+            }
+            $scope.searchresults.album = albums;
+        });
         
         $scope.queryServer(["search", "0","20","term:"+term], function(xhr) {
             var rs = xhr.response.result;
             $scope.searchprogress.track = false;
-            
-            /* search albums independently, because this query will return also artist, year, cover
-             * while "search" will only return album title (and we'd need another XX queries to fill in the details..)
-             */
-            $scope.queryServer(["albums", "0", "20", "search:"+term, "tags:layj"], function(xhr) {
-                $scope.searchprogress.album = false; // XXX when xhr fails, progress will not be reset! spins forever!
-                var rs = xhr.response.result;
-                var albums = [];
-                if ('albums_loop' in rs) {
-                    albums = rs.albums_loop;
-                    $scope.noresults.album = false;
-                }
-                else {
-                    $scope.noresults.album = true;
-                }
-                $scope.searchresults.album = albums;
-            });
-            
+                        
             var tracks = []
             if ('tracks_loop' in xhr.response.result) {
                 $scope.noresults.track = false;

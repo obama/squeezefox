@@ -123,8 +123,8 @@
           <section data-type="list" ng-show="searchresults">
             <nav data-type="scrollbar"></nav>
               <!-- artist results -->
-              <header ng-show="searchresults.artist">artists ({{ searchresults.artist.length }})</header>
-              <ul>
+              <header ng-show="searchresults.artist" ng-click="cssHideRes.artist=!cssHideRes.artist">artists ({{ searchresults.artist.length }}) <i class="fa" ng-class="{ 'fa-minus-square-o': !cssHideRes.artist, 'fa-plus-square-o': cssHideRes.artist}"></i></header>
+              <ul ng-hide="cssHideRes.artist">
                 <li ng-repeat="item in searchresults.artist">
                   <a href="">
                     <p>{{ item.contributor }}</p>
@@ -132,8 +132,8 @@
                 </li>
               </ul>
               <!-- album results -->
-              <header ng-show="searchresults.album">albums ({{ searchresults.album.length }})</header>
-              <ul>
+              <header ng-show="searchresults.album" ng-click="cssHideRes.album=!cssHideRes.album">albums ({{ searchresults.album.length }}) <i class="fa" ng-class="{ 'fa-minus-square-o': !cssHideRes.album, 'fa-plus-square-o': cssHideRes.album}"></i></header>
+              <ul ng-hide="cssHideRes.album">
                 <li ng-repeat="item in searchresults.album">
                   <aside ng-show="item.artwork_track_id" class="pack-end">
                     <img alt="placeholder" ng-src="http://{{ server.addr }}:{{ server.port }}/music/{{ item.artwork_track_id }}/cover_150x150">
@@ -145,8 +145,8 @@
                 </li>
               </ul>
               <!-- track results -->
-              <header ng-show="searchresults.track">tracks ({{ searchresults.track.length }})</header>
-              <ul>
+              <header ng-show="searchresults.track" ng-click="cssHideRes.track=!cssHideRes.track">tracks ({{ searchresults.track.length }})  <i class="fa" ng-class="{ 'fa-minus-square-o': !cssHideRes.track, 'fa-plus-square-o': cssHideRes.track}"></i></header>
+              <ul ng-hide="cssHideRes.track">
                 <li ng-repeat="item in searchresults.track">
                   <aside ng-show="trackdetails[item.track_id]" class="pack-end">
                     <img alt="placeholder" ng-src="{{ searchdetails[item.track_id].coverurl }}">
